@@ -1,0 +1,30 @@
+﻿
+Microsoft Visual Studio Solution File, Format Version 12.00
+# Visual Studio Version 16
+VisualStudioVersion = 16.0.29709.97
+MinimumVisualStudioVersion = 10.0.40219.1
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "NormPgIdentity", "NormPgIdentity\NormPgIdentity.csproj", "{9524EF38-D387-4372-857C-8863A56EF245}"
+EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Migrations", "Migrations", "{AE245D9F-550C-4ABC-B1EA-97B52A8A8309}"
+	ProjectSection(SolutionItems) = preProject
+		Migrations\1_initial.sql = Migrations\1_initial.sql
+	EndProjectSection
+EndProject
+Global
+	GlobalSection(SolutionConfigurationPlatforms) = preSolution
+		Debug|Any CPU = Debug|Any CPU
+		Release|Any CPU = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(ProjectConfigurationPlatforms) = postSolution
+		{9524EF38-D387-4372-857C-8863A56EF245}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{9524EF38-D387-4372-857C-8863A56EF245}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{9524EF38-D387-4372-857C-8863A56EF245}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{9524EF38-D387-4372-857C-8863A56EF245}.Release|Any CPU.Build.0 = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(SolutionProperties) = preSolution
+		HideSolutionNode = FALSE
+	EndGlobalSection
+	GlobalSection(ExtensibilityGlobals) = postSolution
+		SolutionGuid = {2A51F6F1-F3D8-449E-85EE-4C3902F42D3B}
+	EndGlobalSection
+EndGlobal
