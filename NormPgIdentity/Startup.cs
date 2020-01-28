@@ -1,15 +1,18 @@
 using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Threading.Tasks;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Hosting;
+using Microsoft.AspNetCore.Identity;
+using Microsoft.AspNetCore.Identity.UI.Services;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
+using NormPgIdentity.Data;
+using NormPgIdentity.Services;
+using Npgsql;
 
 namespace NormPgIdentity
 {
+
     public class Startup
     {
         public Startup(IConfiguration configuration)
@@ -29,8 +32,12 @@ namespace NormPgIdentity
             services.AddDefaultIdentity<IdentityUser>(options => options.SignIn.RequireConfirmedAccount = true)
                 .AddEntityFrameworkStores<ApplicationDbContext>();
             */
-
-
+            services.AddSingleton<NpgsqlConnection, NpgsqlConnection>(provider => new NpgsqlConnection(Configuration.GetConnectionString("DefaultConnection")));
+            
+            services.AddTransient<IUserStore<IdentityUser<long>>, UserStore>();
+            services.AddTransient<IRoleStore<IdentityRole<long>>, RoleStore>();
+            services.AddTransient<IEmailSender, EmailSender>();
+            services.AddIdentity<IdentityUser<long>, IdentityRole<long>>().AddDefaultTokenProviders().AddDefaultUI();
 
             services.AddRazorPages();
         }

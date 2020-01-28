@@ -8,10 +8,11 @@ begin
     );
 
     if exists(select version from schema_version where version = _version) then
-        raise exception 'migration % is already applied, exiting', _version;
+        raise warning 'migration % is already applied, exiting ...', _version;
+        return;
     end if;
 
-    create table role (
+    create table "role" (
         id bigint not null generated always as identity primary key,
         name character varying(256) null,
         normalized_name character varying(256) null,
@@ -78,7 +79,7 @@ begin
         constraint "FK_user_token_user_user_id" foreign key (user_id) references "user" (id) on delete cascade
     );
 
-    create unique index "RoleNameIndex" on role (normalized_name);
+    create unique index "RoleNameIndex" on "role" (normalized_name);
 
     create index "IX_role_claim_role_id" on role_claim (role_id);
 
@@ -90,11 +91,11 @@ begin
 
     create index "IX_user_login_user_id" on user_login (user_id);
 
-    create index "IX_user_role_role_id" ON user_role (role_id);
+    create index "IX_user_role_role_id" on user_role (role_id);
 
     raise info 'applying migration version %', _version;
 
     insert into schema_version (version) values (_version) on conflict do nothing;
 
 end
-$$;
+$$ language plpgsql;
