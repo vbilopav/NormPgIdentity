@@ -14,17 +14,17 @@ begin
 
     create table "role" (
         id bigint not null generated always as identity primary key,
-        name character varying(256) null,
-        normalized_name character varying(256) null,
+        name character varying null,
+        normalized_name character varying null,
         concurrency_stamp text null
     );
 
     create table "user" (
         id bigint not null generated always as identity primary key,
-        user_name character varying(256) null,
-        normalized_user_name character varying(256) null,
-        email character varying(256) null,
-        normalized_email character varying(256) null,
+        user_name character varying null,
+        normalized_user_name character varying null,
+        email character varying null,
+        normalized_email character varying null,
         email_confirmed boolean not null,
         password_hash text null,
         security_stamp text null,

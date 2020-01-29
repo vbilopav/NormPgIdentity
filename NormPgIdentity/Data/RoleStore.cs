@@ -1,20 +1,20 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Data;
+using System.Data.Common;
 using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
 using Microsoft.AspNetCore.Identity;
 using Norm.Extensions;
-using Npgsql;
 
 namespace NormPgIdentity.Data
 {
     public sealed class RoleStore : IRoleStore<IdentityRole<long>>
     {
-        private readonly NpgsqlConnection _connection;
+        private readonly DbConnection _connection;
 
-        public RoleStore(NpgsqlConnection connection)
+        public RoleStore(DbConnection connection)
         {
             _connection = connection;
         }
@@ -24,7 +24,7 @@ namespace NormPgIdentity.Data
         public async Task<IdentityResult> CreateAsync(IdentityRole<long> role, CancellationToken cancellationToken)
         {
             cancellationToken.ThrowIfCancellationRequested();
-            role.Id = await _connection.SingleAsync<long>(@"
+            role.Id = await _connection.WithCancellationToken(cancellationToken).SingleAsync<long>(@"
 
                 insert into ""role""
                 (
@@ -46,7 +46,7 @@ namespace NormPgIdentity.Data
         public async Task<IdentityResult> DeleteAsync(IdentityRole<long> role, CancellationToken cancellationToken)
         {
             cancellationToken.ThrowIfCancellationRequested();
-            await _connection.ExecuteAsync(@"
+            await _connection.WithCancellationToken(cancellationToken).ExecuteAsync(@"
             
                 delete from ""role"" 
                 where
@@ -83,7 +83,7 @@ namespace NormPgIdentity.Data
         public async Task<IdentityResult> UpdateAsync(IdentityRole<long> role, CancellationToken cancellationToken)
         {
             cancellationToken.ThrowIfCancellationRequested();
-            await _connection.ExecuteAsync(@"
+            await _connection.WithCancellationToken(cancellationToken).ExecuteAsync(@"
 
                 update ""role""
                 set
@@ -103,7 +103,7 @@ namespace NormPgIdentity.Data
 
 
         private async Task<IdentityRole<long>> FindAsync(CancellationToken cancellationToken, long? roleId = null, string name = null) =>
-            await _connection.ReadAsync($@"
+            await _connection.WithCancellationToken(cancellationToken).ReadAsync($@"
                 
                 select
                     id as {nameof(IdentityRole.Id)},

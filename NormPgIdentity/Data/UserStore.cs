@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Data;
+using System.Data.Common;
 using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
@@ -18,9 +19,9 @@ namespace NormPgIdentity.Data
         IUserPasswordStore<IdentityUser<long>>, 
         IUserRoleStore<IdentityUser<long>>
     {
-        private readonly NpgsqlConnection _connection;
+        private readonly DbConnection _connection;
 
-        public UserStore(NpgsqlConnection connection)
+        public UserStore(DbConnection connection)
         {
             _connection = connection;
         }
@@ -30,7 +31,7 @@ namespace NormPgIdentity.Data
         public async Task<IdentityResult> CreateAsync(IdentityUser<long> user, CancellationToken cancellationToken)
         {
             cancellationToken.ThrowIfCancellationRequested();
-            user.Id = await _connection.SingleAsync<long>(@"
+            user.Id = await _connection.WithCancellationToken(cancellationToken).SingleAsync<long>(@"
 
                 insert into ""user""
                 (
@@ -54,7 +55,7 @@ namespace NormPgIdentity.Data
         public async Task<IdentityResult> DeleteAsync(IdentityUser<long> user, CancellationToken cancellationToken)
         {
             cancellationToken.ThrowIfCancellationRequested();
-            await _connection.ExecuteAsync(@"
+            await _connection.WithCancellationToken(cancellationToken).ExecuteAsync(@"
             
                 delete from ""user"" 
                 where
@@ -91,7 +92,7 @@ namespace NormPgIdentity.Data
         public async Task<IdentityResult> UpdateAsync(IdentityUser<long> user, CancellationToken cancellationToken)
         {
             cancellationToken.ThrowIfCancellationRequested();
-            await _connection.ExecuteAsync(@"
+            await _connection.WithCancellationToken(cancellationToken).ExecuteAsync(@"
 
                 update ""user""
                 set
@@ -188,7 +189,7 @@ namespace NormPgIdentity.Data
         public async Task AddToRoleAsync(IdentityUser<long> user, string roleName, CancellationToken cancellationToken)
         {
             cancellationToken.ThrowIfCancellationRequested();
-            await _connection.ExecuteAsync(@"
+            await _connection.WithCancellationToken(cancellationToken).ExecuteAsync(@"
 
                 insert into user_role ( user_id, role_id )
                 
@@ -207,7 +208,7 @@ namespace NormPgIdentity.Data
         public async Task<IList<string>> GetRolesAsync(IdentityUser<long> user, CancellationToken cancellationToken)
         {
             cancellationToken.ThrowIfCancellationRequested();
-            return await _connection.ReadAsync<string>(@"
+            return await _connection.WithCancellationToken(cancellationToken).ReadAsync<string>(@"
 
                 select
                     r.name
@@ -215,13 +216,13 @@ namespace NormPgIdentity.Data
                     ""role"" r
                     
                     inner join user_role ur 
-                    on r.role_id = ur.id and ur.user_id = @id
+                    on r.id = ur.role_id and ur.user_id = @id
 
             ", ("id", user.Id)).ToListAsync(cancellationToken);
         }
 
         public async Task<IList<IdentityUser<long>>> GetUsersInRoleAsync(string roleName, CancellationToken cancellationToken) =>
-            await _connection.ReadAsync($@"
+            await _connection.WithCancellationToken(cancellationToken).ReadAsync($@"
 
                 select
                     {GetUserSelectRecord()}
@@ -242,7 +243,7 @@ namespace NormPgIdentity.Data
         public async Task<bool> IsInRoleAsync(IdentityUser<long> user, string roleName, CancellationToken cancellationToken)
         {
             cancellationToken.ThrowIfCancellationRequested();
-            return await _connection.ReadAsync<string>(@"
+            return await _connection.WithCancellationToken(cancellationToken).ReadAsync<string>(@"
 
                 select
                     1
@@ -250,7 +251,7 @@ namespace NormPgIdentity.Data
                     ""role"" r
                     
                     inner join user_role ur 
-                    on r.role_id = ur.id and ur.user_id = @id
+                    on r.id = ur.role_id and ur.user_id = @id
 
                 where
                     r.normalized_name = @role
@@ -261,7 +262,7 @@ namespace NormPgIdentity.Data
         public async Task RemoveFromRoleAsync(IdentityUser<long> user, string roleName, CancellationToken cancellationToken)
         {
             cancellationToken.ThrowIfCancellationRequested();
-            await _connection.ExecuteAsync(@"
+            await _connection.WithCancellationToken(cancellationToken).ExecuteAsync(@"
 
                 delete from user_role ur
                 using ""role"" r
@@ -274,7 +275,7 @@ namespace NormPgIdentity.Data
         }
 
         private async Task<IdentityUser<long>> FindAsync(CancellationToken cancellationToken, long? userId = null, string name = null, string email = null) =>
-            await _connection.ReadAsync($@"
+            await _connection.WithCancellationToken(cancellationToken).ReadAsync($@"
                 
                 select
                     {GetUserSelectRecord()}

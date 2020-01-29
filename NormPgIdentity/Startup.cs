@@ -1,4 +1,5 @@
 using System;
+using System.Data.Common;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.Identity;
@@ -7,6 +8,7 @@ using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using NormPgIdentity.Data;
+using NormPgIdentity.Migrations;
 using NormPgIdentity.Services;
 using Npgsql;
 
@@ -32,12 +34,25 @@ namespace NormPgIdentity
             services.AddDefaultIdentity<IdentityUser>(options => options.SignIn.RequireConfirmedAccount = true)
                 .AddEntityFrameworkStores<ApplicationDbContext>();
             */
-            services.AddSingleton<NpgsqlConnection, NpgsqlConnection>(provider => new NpgsqlConnection(Configuration.GetConnectionString("DefaultConnection")));
+            var connectionString = Configuration.GetConnectionString("DefaultConnection");
+            MigrationManager.ThrowIfNotApplied(connectionString);
+            services.AddSingleton<DbConnection, NpgsqlConnection>(provider => new NpgsqlConnection(connectionString));
             
             services.AddTransient<IUserStore<IdentityUser<long>>, UserStore>();
             services.AddTransient<IRoleStore<IdentityRole<long>>, RoleStore>();
             services.AddTransient<IEmailSender, EmailSender>();
-            services.AddIdentity<IdentityUser<long>, IdentityRole<long>>().AddDefaultTokenProviders().AddDefaultUI();
+            services.AddIdentity<IdentityUser<long>, IdentityRole<long>>(options =>
+                {
+                    options.Password.RequireDigit = false;
+                    options.Password.RequireLowercase = false;
+                    options.Password.RequireUppercase = false;
+                    options.Password.RequireDigit = false;
+                    options.Password.RequireNonAlphanumeric = false;
+                    options.Password.RequiredLength = 1;
+
+                })
+                .AddDefaultTokenProviders()
+                .AddDefaultUI();
 
             services.AddRazorPages();
         }
