@@ -8,8 +8,7 @@ begin
     );
 
     if exists(select version from schema_version where version = _version) then
-        raise warning 'migration % is already applied, exiting ...', _version;
-        return;
+        raise exception 'migration % is already applied, exiting ...', _version;
     end if;
 
     create table "role" (
@@ -42,7 +41,7 @@ begin
         role_id bigint not null,
         claim_type text null,
         claim_value text null,
-        constraint "FK_role_claim_role_role_id" foreign key (role_id) references role (id) on delete cascade
+        constraint "FK_role_claim_role_role_id" foreign key (role_id) references role (id) on delete cascade deferrable
     );
 
     create table user_claim (
@@ -50,7 +49,7 @@ begin
         user_id bigint not null,
         claim_type text null,
         claim_value text null,
-        constraint "FK_user_claim_user_user_id" foreign key (user_id) references "user" (id) on delete cascade
+        constraint "FK_user_claim_user_user_id" foreign key (user_id) references "user" (id) on delete cascade deferrable
     );
 
     create table user_login (
@@ -59,15 +58,15 @@ begin
         provider_display_name text null,
         user_id bigint not null,
         constraint "PK_user_login" primary key (login_provider, provider_key),
-        constraint "FK_user_login_user_user_id" foreign key (user_id) references "user" (id) on delete cascade
+        constraint "FK_user_login_user_user_id" foreign key (user_id) references "user" (id) on delete cascade deferrable
     );
 
     create table user_role (
         user_id bigint not null,
         role_id bigint not null,
         constraint "PK_user_role" primary key (user_id, role_id),
-        constraint "FK_user_role_role_role_id" foreign key (role_id) references role (id) on delete cascade,
-        constraint "FK_user_role_user_user_id" foreign key (user_id) references "user" (id) on delete cascade
+        constraint "FK_user_role_role_role_id" foreign key (role_id) references role (id) on delete cascade deferrable,
+        constraint "FK_user_role_user_user_id" foreign key (user_id) references "user" (id) on delete cascade deferrable
     );
 
     create table user_token (
@@ -76,7 +75,7 @@ begin
         name text not null,
         value text null,
         constraint "PK_user_token" primary key (user_id, login_provider, name),
-        constraint "FK_user_token_user_user_id" foreign key (user_id) references "user" (id) on delete cascade
+        constraint "FK_user_token_user_user_id" foreign key (user_id) references "user" (id) on delete cascade deferrable
     );
 
     create unique index "RoleNameIndex" on "role" (normalized_name);

@@ -194,7 +194,7 @@ namespace NormPgIdentity.Data
                 insert into user_role ( user_id, role_id )
                 
                 select 
-                    @id as user_id, role_id
+                    @id as user_id, id as role_id
 
                 from 
                     ""role""
@@ -243,7 +243,7 @@ namespace NormPgIdentity.Data
         public async Task<bool> IsInRoleAsync(IdentityUser<long> user, string roleName, CancellationToken cancellationToken)
         {
             cancellationToken.ThrowIfCancellationRequested();
-            return await _connection.WithCancellationToken(cancellationToken).ReadAsync<string>(@"
+            return await _connection.WithCancellationToken(cancellationToken).ReadAsync(@"
 
                 select
                     1
@@ -281,33 +281,33 @@ namespace NormPgIdentity.Data
                     {GetUserSelectRecord()}
 
                 from
-                    ""user""
+                    ""user"" u
 
                 where
-                    ( @id is null or id = @id ) and 
-                    ( @name is null or normalized_user_name = @name ) and 
-                    ( @email is null or normalized_email = @email )
+                    ( @id is null or u.id = @id ) and 
+                    ( @name is null or u.normalized_user_name = @name ) and 
+                    ( @email is null or u.normalized_email = @email )
             
             ", ("id", userId, DbType.Int64), ("name", name, DbType.String), ("email", email, DbType.String))
                 .Select<IdentityUser<long>>()
                 .FirstOrDefaultAsync(cancellationToken);
 
         private static string GetUserSelectRecord() => @$"
-                id as {nameof(IdentityRole.Id)},
-                user_name as {nameof(IdentityUser<long>.UserName)},
-                normalized_user_name as {nameof(IdentityUser<long>.NormalizedUserName)},
-                email as {nameof(IdentityUser<long>.Email)},
-                normalized_email as {nameof(IdentityUser<long>.NormalizedEmail)},
-                email_confirmed as {nameof(IdentityUser<long>.EmailConfirmed)},
-                password_hash as {nameof(IdentityUser<long>.PasswordHash)},
-                security_stamp as {nameof(IdentityUser<long>.SecurityStamp)},
-                concurrency_stamp as {nameof(IdentityUser<long>.ConcurrencyStamp)},
-                phone_number as {nameof(IdentityUser<long>.PhoneNumber)},
-                phone_number_confirmed as {nameof(IdentityUser<long>.PhoneNumberConfirmed)},
-                two_factor_enabled as {nameof(IdentityUser<long>.TwoFactorEnabled)},
-                lockout_end as {nameof(IdentityUser<long>.LockoutEnd)},
-                lockout_enabled as {nameof(IdentityUser<long>.LockoutEnabled)},
-                access_failed_count as {nameof(IdentityUser<long>.AccessFailedCount)}
+                u.id as {nameof(IdentityRole.Id)},
+                u.user_name as {nameof(IdentityUser<long>.UserName)},
+                u.normalized_user_name as {nameof(IdentityUser<long>.NormalizedUserName)},
+                u.email as {nameof(IdentityUser<long>.Email)},
+                u.normalized_email as {nameof(IdentityUser<long>.NormalizedEmail)},
+                u.email_confirmed as {nameof(IdentityUser<long>.EmailConfirmed)},
+                u.password_hash as {nameof(IdentityUser<long>.PasswordHash)},
+                u.security_stamp as {nameof(IdentityUser<long>.SecurityStamp)},
+                u.concurrency_stamp as {nameof(IdentityUser<long>.ConcurrencyStamp)},
+                u.phone_number as {nameof(IdentityUser<long>.PhoneNumber)},
+                u.phone_number_confirmed as {nameof(IdentityUser<long>.PhoneNumberConfirmed)},
+                u.two_factor_enabled as {nameof(IdentityUser<long>.TwoFactorEnabled)},
+                u.lockout_end as {nameof(IdentityUser<long>.LockoutEnd)},
+                u.lockout_enabled as {nameof(IdentityUser<long>.LockoutEnabled)},
+                u.access_failed_count as {nameof(IdentityUser<long>.AccessFailedCount)}
          ";
 
         private static (string, object)[] GetUserParameters(IdentityUser<long> user) =>
@@ -315,9 +315,9 @@ namespace NormPgIdentity.Data
             {
                 ("id", user.Id),
                 ("user_name", user.UserName),
-                ("normalized_user_name", user.NormalizedUserName),
+                ("normalized_user_name", user.NormalizedUserName ?? user.UserName?.ToUpper()),
                 ("email", user.Email),
-                ("normalized_email", user.NormalizedEmail),
+                ("normalized_email", user.NormalizedEmail ?? user.Email?.ToUpper()),
                 ("email_confirmed", user.EmailConfirmed),
                 ("password_hash", user.PasswordHash),
                 ("security_stamp", user.SecurityStamp),

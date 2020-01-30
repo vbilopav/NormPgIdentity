@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.IO;
 using System.Linq;
 using System.Threading.Tasks;
@@ -19,14 +20,22 @@ namespace NormPgIdentity.Migrations
         {
             var result = Directory
                 .EnumerateFiles(path, "*.sql", SearchOption.TopDirectoryOnly)
-                .Select(Path.GetFileNameWithoutExtension)
-                .Where(item => direction switch
+                .Select(item => (item, Path.GetFileNameWithoutExtension(item).ToLower()))
+                .Where(item =>
                 {
-                    MigrationDirection.Up when item.EndsWith(UpEndsWith) => true,
-                    MigrationDirection.Down when item.EndsWith(DownEndsWith) => true,
-                    _ => false
+                    var (_, name) = item;
+                    return direction switch
+                    {
+                        MigrationDirection.Up when name.EndsWith(UpEndsWith) => true,
+                        MigrationDirection.Down when name.EndsWith(DownEndsWith) => true,
+                        _ => false
+                    };
                 })
-                .Select(item => (Convert.ToInt32(item.Split("_").FirstOrDefault()), item));
+                .Select(item =>
+                {
+                    var (full, name) = item;
+                    return (Convert.ToInt32(name.Split("_").FirstOrDefault()), full);
+                });
 
             return direction == MigrationDirection.Up ? result.OrderBy(item => item) : result.OrderByDescending(item => item);
         }
@@ -36,23 +45,35 @@ namespace NormPgIdentity.Migrations
             using var connection = new NpgsqlConnection(connectionString);
             var migrations = EnumerateMigrations(MigrationDirection.Up, path);
 
-            var missing = connection.Read<int>(@"
-
-                select v
-                from 
-                    unnest(@p) v
-                    left outer join schema_version s 
-                    on v = s.version
-                where
-                    s.version is null
-
-                ", 
-                new NpgsqlParameter("p", NpgsqlDbType.Array | NpgsqlDbType.Integer) {Value = migrations.Select(item => item.id).ToList()})
-                .ToList();
-            if (missing.Count != 0)
+            try
             {
-                throw new ApplicationException(
-                    $"Some migrations are not applied. Missing migrations in database:{Environment.NewLine}{string.Join(Environment.NewLine, migrations.Where(m => missing.Contains(m.id)).Select(m => m.name))}{Environment.NewLine}"); 
+                var missing = connection.Read<int>(@"
+
+                        select v
+                        from 
+                            unnest(@array) v
+                            left outer join schema_version s 
+                            on v = s.version
+                        where
+                            s.version is null
+
+                        ", 
+                        new NpgsqlParameter("array", NpgsqlDbType.Array | NpgsqlDbType.Integer)
+                        {
+                            Value = migrations.Select(item => item.id).ToList()
+                        })
+                    .ToList();
+
+                if (missing.Count != 0)
+                {
+                    throw new ApplicationException(
+                        $"Some migrations are not applied. Missing migrations in database:" +
+                        $"{Environment.NewLine}{string.Join(Environment.NewLine, migrations.Where(m => missing.Contains(m.id)).Select(m => m.name))}{Environment.NewLine}");
+                }
+            }
+            catch (PostgresException exception) when (exception.SqlState == "42P01")   // 42P01=undefined_table, see https://www.postgresql.org/docs/9.3/errcodes-appendix.html
+            {
+                throw new ApplicationException("No migrations are yet applied. Run all available migrations.");
             }
         }
     }

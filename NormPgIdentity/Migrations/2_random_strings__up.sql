@@ -3,8 +3,7 @@ declare _version int = 2;
 begin
 
     if exists(select version from schema_version where version = _version) then
-        raise warning 'migration % is already applied, exiting ...', _version;
-        return;
+        raise exception 'migration % is already applied, exiting ...', _version;
     end if;
 
     create table random_strings (

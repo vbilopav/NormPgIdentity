@@ -37,7 +37,7 @@ namespace NormPgIdentity.Data
                 returning id;
 
             ", ("name", role.Name),
-                ("normalized_name", role.NormalizedName),
+                ("normalized_name", role.NormalizedName ?? role.Name?.ToUpper()),
                 ("concurrency_stamp", role.ConcurrencyStamp));
 
             return IdentityResult.Success;
