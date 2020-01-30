@@ -5,7 +5,6 @@ using System.Threading.Tasks;
 using Microsoft.AspNetCore.Identity;
 using Norm.Extensions;
 using NormPgIdentity.Data;
-using Npgsql;
 using Xunit;
 
 namespace NormPgIdentityTests
