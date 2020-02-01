@@ -602,3 +602,101 @@ public class MyUnitTests : PostgreSqlUnitTestFixture
     }
 }
 ```
+
+Now, that wasn't so hard, was it? Let's write some database tests now...
+
+First, we will test role creation from within [`CreateAsync` method in `RoleStore` implementation](https://github.com/vbilopav/NormPgIdentity/blob/master/NormPgIdentity/Data/RoleStore.cs#L24):
+
+```csharp
+[Fact]
+public async Task Test_CreateAsync()
+{
+    // prepare
+    using var roleStore = new RoleStore(Connection);
+    var role = new IdentityRole<long> {Name = "name", ConcurrencyStamp = "stamp"};
+    // act
+    var result = await roleStore.CreateAsync(role, CancellationToken.None);
+    // assert
+    Assert.Equal(IdentityResult.Success, result);
+    Assert.Equal((role.Id, role.Name, role.Name.ToUpper(), role.ConcurrencyStamp), 
+        Connection.Single<int, string, string, string>("select id, name, normalized_name, concurrency_stamp from role"));
+}
+```
+
+Notice that we actually looked up into the database did the test created a role record for us. And that query also doesn't have and conditions whatsoever because at that point it is the one and only record in the database.
+
+Instead, we could have also used `FindByNameAsync` method from role store implementation to assert has role really been created. In fact, the test for that method doesn't look up in the database at all:
+
+```csharp
+[Fact]
+public async Task Test_FindByNameAsync()
+{
+    // prepare
+    using var roleStore = new RoleStore(Connection);
+    var role = new IdentityRole<long> { Name = "name1", NormalizedName = "NormalizedName1" };
+    await roleStore.CreateAsync(role, CancellationToken.None);
+    await roleStore.CreateAsync(new IdentityRole<long> { Name = "name2" }, CancellationToken.None);
+    await roleStore.CreateAsync(new IdentityRole<long> { Name = "name3" }, CancellationToken.None);
+    // act
+    var result = await roleStore.FindByNameAsync(role.NormalizedName, CancellationToken.None);
+    // assert
+    Assert.Equal(role.Id, result.Id);
+    Assert.Equal(role.Name, result.Name);
+    Assert.Equal(role.NormalizedName, result.NormalizedName);
+    Assert.Equal(role.ConcurrencyStamp, result.ConcurrencyStamp);
+}
+```
+
+There are a bunch of tests implemented in this demo. Let's see one more example - a test of adding the user to the specific role ([`AddToRoleAsync` method in `UserStore` implementation](https://github.com/vbilopav/NormPgIdentity/blob/master/NormPgIdentity/Data/UserStore.cs)):
+
+```csharp
+[Fact]
+public async Task Test_AddToRoleAsync()
+{
+    // prepare
+    using var userStore = new UserStore(Connection);
+    using var roleStore = new RoleStore(Connection);
+    var role = new IdentityRole<long> {Name = "name"};
+    await roleStore.CreateAsync(role, CancellationToken.None);
+    // act
+    await userStore.AddToRoleAsync(new IdentityUser<long> {Id = 1}, "NAME", CancellationToken.None);
+    // assert
+    Assert.Equal((role.Id, 1), Connection.Single<long, long>("select role_id, user_id from user_role"));
+}
+```
+
+Notice that we only have created a role in test preparation. We didn't actually create any user, we just pass the user object with the id, record in the database hasn't been created at all. 
+
+That is possible because we have set all database constraints to deferred state with `set constraints all deferred` statement on test initialization. This is a simple example, but related tables can be numbered in dozens and that complicates test preparation immensely. Of course, you can always disable or tweak such behavior.
+
+That is it, unit testing backed by database doesn't have to be difficult. In fact, it can be even fun. It just needs a bit of boilerplate and a little bit of love.
+
+## Final words
+
+This article and demo project clearly demonstrates how to harness the full power of fully armed and operational PostgreSQL databases as they would say in Star Wars by opting out to Micro ORM (or no ORM at all) approach to the project.
+
+Whether it is Dapper or Norm, it really doesn't matter - you can use your platform, such as PostgreSQL to their full potential.
+
+And switching to PostgreSQL will save a significant amount of money on your cloud infrastructure costs when compared to some commercial database, without loosing exactly nothing.
+
+> But, what about migrations, we need migrations. And unit tests, we need unit tests.
+
+I've heard so many times before by many capable developers and architects...
+
+Next time, we can show them this article. Yes, you can have migrations, and yes, you can have unit tests.
+
+But that's not all. In the next article, I'll demonstrate lift this entire concept to whole another level by using PostgreSQL functions in terms of:
+
+- Performances
+
+- Maintainability
+
+- Security
+
+Again, without losing anything at all.
+
+## About me
+
+I'm an independent software developer and consultant - with more than 20 years of experience in the development of database-backed business applications.
+
+If you're interested in this line of work or related consulting, send me a message to see if I'm available at the moment.
