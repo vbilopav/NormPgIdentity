@@ -23,8 +23,8 @@ namespace NormPgIdentityTests
             var result = await roleStore.CreateAsync(role, CancellationToken.None);
             // assert
             Assert.Equal(IdentityResult.Success, result);
-            Assert.Equal((role.Id, "name", "NAME", "stamp"), Connection.Single<int, string, string, string>(@"
-                          select id, name, normalized_name, concurrency_stamp from role"));
+            Assert.Equal((role.Id, role.Name, role.Name.ToUpper(), role.ConcurrencyStamp), 
+                Connection.Single<int, string, string, string>("select id, name, normalized_name, concurrency_stamp from role"));
         }
 
         [Fact]
