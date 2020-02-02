@@ -127,8 +127,6 @@ services.AddIdentity<IdentityUser<long>, IdentityRole<long>>(options =>
     })
     .AddDefaultTokenProviders()
     .AddDefaultUI();
-
-services.AddRazorPages();
 ```
 
 This will add identity for our two data models (`IdentityUser<long>` for users and `IdentityRole<long>`) with appropriate configuration options and with default security token provider. Finally, for our configured identity we add the default UI implementation so that we can actually use the application.
@@ -334,14 +332,18 @@ But, more importantly, it serves also to test the entire concept of the migratio
 The entire source code for these migrations can be found on the following [location](https://github.com/vbilopav/NormPgIdentity/tree/master/NormPgIdentity/Migrations).
 
 To run these migration scripts you can simply use some of the PostgreSQL tools, like for example:
-`psql` - a command-line tool with `-f` or `--file` switch to run the specific script by name.
-`pgAdmin` - GUI tool to, also run a specific script.
-any other database tool at your disposal.
+
+- `psql` - a command-line tool with `-f` or `--file` switch to run the specific script by name.
+
+- `pgAdmin` - GUI tool to, also run a specific script.
+
+- Or any other database tool at your disposal, like `DBeaver` for example.
 
 The only thing that you have to take in mind that you need to honor the convention and run the scripts in the specific order:
 
-Upgrade script ordered ascending
-Downgrade script ordered descending
+- Upgrade script ordered ascending
+
+- Downgrade script ordered descending
 
 You can very, very easily build your own command-line tool (separate or part of the main application or any way you prefer) - that will be mindful of that convention.
 
@@ -369,7 +371,7 @@ public static void ApplyMigrations(NpgsqlConnection connection, MigrationDirecti
 
 Implementation of this functionality will first see what are the available migration by enumerating upgrade scripts and then query the `schema_version` table to see if some of them are missing.
 
-To be able to do this, the following query is used:
+To be able to do this, the we query **to a list of missing version numbers** - like this:
 
 ```csharp
 var missing = connection.Read<int>(@"
@@ -388,7 +390,7 @@ var missing = connection.Read<int>(@"
     .ToList();
 ```
 
-Querying the database on each migration to see is it present - is a well-known data access problem or anti-pattern known as N+1 query anti-pattern, very typical for the ORM approach.
+Querying the database on each migration to see is it present - is a well-known data access problem or anti-pattern known as **N+1 query anti-pattern**, so very typical for the ORM approach.
 
 That would utilize network literally for each migration item, and network latency and bandwidth **multiplied by the number of migrations** would have to be counted into overall performances.
 
